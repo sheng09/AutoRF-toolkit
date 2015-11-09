@@ -14,8 +14,8 @@ Usage: %s SACfiles [-P[d|a<interval>]] [-M<interval>] -G<good list> -D<bad list>
         -Pd amplitude must be positive at 'O' point\n\
         -Pa<interval> amplitude integral within [O-interval, O+interval] must be positive\n\
 \n\
--M<interval>\n\
-      rf must have its max amplitude within [O-interval, O+interval].\n\
+-M<t1/t2>\n\
+      rf must have its max amplitude within [O+t1, O+t2].\n\
 -G    output file for good files list\n\
 -D    output file for bad files list\n\
 ";
@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 	SACFILE		data;
 	int i;
 	int ntotal =0, npicked =0, nbad = 0;
-	float intervalP = 1, intervalM = 0.5;
+	float intervalP = 1.0f, t1 = 0.0f, t2 = 0.5f;
 	for( i = 1; i < argc; ++i)
 	{
 		if(argv[i][0] == '-')
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 					break;
 				case 'M':
 					fgMax = 1;
-					sscanf(argv[i],"-M%f", &intervalM);
+					sscanf(argv[i],"-M%f/%f", &t1, &t2);
 					break;
 				case 'H':
 					fprintf(stderr, HMSG, argv[0]);
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 			}
 			if(data.status == GOOD && fgMax == 1)
 			{
-				data.status = isPMax( &(data.hdr), data.trace, intervalM);
+				data.status = isPMax( &(data.hdr), data.trace, t1, t2);
 			}
 
 			if(data.status == GOOD)

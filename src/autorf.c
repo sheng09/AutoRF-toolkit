@@ -9,7 +9,7 @@ ISRF isPPostive(SACHEAD *hdr, float *trace)
 {
 	int index ;
 	index = rintf( (hdr->o - hdr->b) / (hdr->delta) );
-	if( trace[index] > 0.0f )
+	if( trace[index] > 0.0f &&  trace[index] < 1.0f )
 		return GOOD;
 	else
 		return BAD;
@@ -18,21 +18,23 @@ ISRF isPPostive(SACHEAD *hdr, float *trace)
 ISRF isPPostive2(SACHEAD *hdr, float *trace, float interval)
 {
 	int pre, suf;
+	int index ;
+	index = rintf( (hdr->o - hdr->b) / (hdr->delta) );
 	pre = rintf( (hdr->o - hdr->b - interval ) / (hdr->delta) );
 	suf = rintf( (hdr->o - hdr->b + interval ) / (hdr->delta) );
-	if( integf(trace, pre, suf, hdr->delta) > 0.0f )
+	if( integf(trace, pre, suf, hdr->delta) > 0.0f &&  trace[index] < 1.0f )
 		return GOOD;
 	else
 		return BAD;
 }
 
-ISRF isPMax(SACHEAD *hdr, float *trace, float interval)
+ISRF isPMax(SACHEAD *hdr, float *trace, float t1, float t2)
 {
 	float Maxt = 0.0f;
 	int   MaxIndex = 0;
 	fdmaxf(trace, hdr->npts , &MaxIndex);
 	Maxt = MaxIndex * hdr->delta + hdr->b;
-	if( Maxt >= (hdr->o - interval) && Maxt <= (hdr->o + interval) )
+	if( Maxt >= (hdr->o + t1) && Maxt <= (hdr->o + t2) )
 		return GOOD;
 	else
 		return BAD;

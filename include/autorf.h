@@ -23,7 +23,7 @@ ISRF isPPostive(SACHEAD *hdr, float *trace);
 
 ISRF isPPostive2(SACHEAD *hdr, float *trace, float interval);
 
-ISRF isPMax(SACHEAD *hdr, float *trace, float interval);
+ISRF isPMax(SACHEAD *hdr, float *trace, float t1, float t2);
 
 ISRF isSame(SACHEAD *hdr, float *trace, SACHEAD *RefHdr, float *RefTrace,
 		float threshold, float pre, float suf);
