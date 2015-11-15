@@ -5,7 +5,7 @@ BIN = ./bin
 LIB = ./lib
 INC = ./include
 OBJ = autorf.o sacio.o
-OBJLIB = 
+OBJLIB =
 OBJEXE = pickRf pickRf_WV
 VPATH = ${SRC}:${INC}:${LIB}:${SFWHOME}/include:${SFWHOME}/lib
 
