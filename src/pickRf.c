@@ -1,15 +1,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include "autorf.h"
 #include "sac.h"
 #include "liberrmsg.h"
 
 static char HMSG[]="\
-Description: pick GOOD RFs given SACfiles\n\
+Description: pick GOOD RFs given a file that contain SAC filenames\n\
 \n\
-Usage: %s SACfiles [-P[d|a<interval>]] [-M<interval>] -G<good list> -D<bad list>\n\
+Usage: %s -L<filelist> [-P[d|a<interval>]] [-M<interval>] -G<good list> -D<bad list>\n\
 \n\
+-L    file that contain SAC filenames line by line\n\
 -P    rf must be positive around 'O'.\n\
         -Pd amplitude must be positive at 'O' point\n\
         -Pa<interval> amplitude integral within [O-interval, O+interval] must be positive\n\
@@ -24,9 +26,10 @@ Usage: %s SACfiles [-P[d|a<interval>]] [-M<interval>] -G<good list> -D<bad list>
 
 int main(int argc, char *argv[])
 {
-	FILE *fpgood = NULL,  *fpbad = NULL;
-	char *strgood = NULL, *strbad = NULL;
-	char fgP = 0, fgMax = 0, fggood = 0, fgbad = 0;
+	FILE *fpgood = NULL,  *fpbad = NULL,  *fpin = NULL;
+	char sacfile[1024], *sacfile_tail = sacfile + 1023, *p_sacfile;
+	char *strgood = NULL, *strbad = NULL, *strin = NULL;
+	char fgP = 0, fgMax = 0, fggood = 0, fgbad = 0, fgin = 0;
 	SACFILE		data;
 	int i;
 	int ntotal =0, npicked =0, nbad = 0;
@@ -37,6 +40,12 @@ int main(int argc, char *argv[])
 		{
 			switch(argv[i][1])
 			{
+				//Add -L by Sheng Wang 2016/01/26.
+				//  Now, this program read sac filenames from '-L<file>' but not stdin
+				case 'L':
+					fgin  = 1;
+					strin = &( argv[i][2] );
+					break;
 				case 'G':
 					strgood = &( argv[i][2] );
 					fggood  = 1;
@@ -62,13 +71,18 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if( fggood != 1 || fgbad != 1 || (fgP == 0 && fgMax == 0) )
+	if( fgin != 1 || fggood != 1 || fgbad != 1 || (fgP == 0 && fgMax == 0) )
 	{
 		perrmsg("", ERR_MORE_ARGS);
 		fprintf(stderr, HMSG, argv[0]);
 		exit(1);
 	}
 
+	if( NULL == ( fpin =  fopen(strin,"r") ))
+	{
+		perrmsg(strin, ERR_OPEN_FILE);
+		exit(1);
+	}
 	if( NULL == ( fpgood =  fopen(strgood,"w") ))
 	{
 		perrmsg(strgood, ERR_OPEN_FILE);
@@ -80,13 +94,23 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	for( i = 1; i < argc; ++i)
+	//for( i = 1; i < argc; ++i)
+	for(;;)
 	{
-		if(argv[i][0] != '-')
-		{
+		//Now, read sac filenames from '-L<file>'
+		memset(sacfile, 0, 1024);
+		if( fgets(sacfile, 1024, fpin) == NULL )
+			break;
+		//Change the '\n' to '\0' in sacfile string
+		for( p_sacfile = sacfile_tail ;  *p_sacfile == '\0' ; --p_sacfile )
+			;
+		*p_sacfile = '\0';
+		//if(argv[i][0] != '-')
+		//{
 			++ntotal;
 			data.status = GOOD;
-			data.trace  = read_sac(argv[i], &(data.hdr) );
+			//data.trace  = read_sac(argv[i], &(data.hdr) );
+			data.trace  = read_sac( sacfile , &(data.hdr) );
 
 			if(data.status == GOOD && fgP != 0)
 			{
@@ -103,18 +127,22 @@ int main(int argc, char *argv[])
 			if(data.status == GOOD)
 			{
 				++npicked;
-				fprintf(fpgood,"%s\n", argv[i]);
+				//fprintf(fpgood,"%s\n", argv[i]);
+				fprintf(fpgood,"%s\n", sacfile );
+
 			}
 			else
 			{
 				++nbad;
-				fprintf(fpbad, "%s\n", argv[i] );
+				//fprintf(fpbad, "%s\n", argv[i] );
+				fprintf(fpbad, "%s\n", sacfile );
 			}
-		}
+		//}
 	}
 	fprintf(stderr, "Total: %d Picked: %d Bad: %d\n", ntotal, npicked, nbad);
 	free(data.trace);
 	fclose(fpgood);
 	fclose(fpbad);
+	fclose(fpin);
 	return 0;
 }
