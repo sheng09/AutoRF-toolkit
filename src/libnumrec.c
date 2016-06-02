@@ -4,6 +4,7 @@
 #include "libnumrec.h"
 #include "liberrmsg.h"
 #include <string.h>
+#include <omp.h>
 float rnd_uni(long *idum)
 /**C*F****************************************************************
 **                                                                  **
@@ -103,7 +104,8 @@ float* linearStack(float **trace, int ntrace, int len, float **ak)
 {
         int i, j;
         float *x;
-        memset(*ak, len, sizeof(float));
+        //memset(*ak, len, sizeof(float)); Debug by ShengWang at 2016/04/26
+        memset(*ak, 0, len * sizeof(float));
         for( i = 0; i < ntrace; ++i)
         {
                 x = trace[i];
@@ -123,7 +125,9 @@ float* nrootStack(float **trace, int ntrace, int len, float **ak, float NRoot)
 {
         int i, j;
         float *x;
-        memset(*ak, len, sizeof(float));
+        float V_abs, N_abs;
+        //memset(*ak, len, sizeof(float)); Debug by ShengWang at 2016/04/26
+        memset(*ak, 0, len * sizeof(float));
         if( NRoot == 1.0f )
         {
                 linearStack(trace, ntrace, len, ak);
@@ -134,9 +138,17 @@ float* nrootStack(float **trace, int ntrace, int len, float **ak, float NRoot)
                 x = trace[i];
                 for(j = 0; j < len; ++j)
                 {
-                        if(x[j] > 1.0e-6f)
+                        V_abs = fabsf(x[j]);
+                        if( V_abs > 1.0e-6f)
                         {
-                                (*ak)[j] += (expf(logf( fabsf(x[j]) ) / NRoot ) ) * ( x[j] / fabsf(x[j]) );
+                                //(*ak)[j] += (expf(logf( fabsf(x[j]) ) / NRoot ) ) * ( x[j] / fabsf(x[j]) );
+
+                                //Revised by WangSheng 2015/12/03
+                                N_abs  = expf(logf(V_abs)/NRoot);
+                                if(x[j] > 0.0f)
+                                    (*ak)[j] += N_abs;
+                                else
+                                    (*ak)[j] -= N_abs;
                         }
                 }
         }
@@ -147,7 +159,6 @@ float* nrootStack(float **trace, int ntrace, int len, float **ak, float NRoot)
         }
         return *ak;
 }
-
 
 //Integral for given 'trace' from 'pre' to 'suf' using trapezoid method
 float integf(float *trace, int pre, int suf, float dx)
@@ -196,7 +207,7 @@ float corf_2(float *trace1, float *trace2, int len, int b, int e)
 {
     if(b < 0 || e < 0 || b > len || e > len || e < b)
     {
-        perrmsg( corf_2, WARN_OUT_RANGE);
+        perrmsg( "corf_2", WARN_OUT_RANGE);
         exit(1);
     }
     int i;

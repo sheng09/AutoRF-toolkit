@@ -9,7 +9,7 @@
 static char HMSG[]="\
 Description: Given number of sac files, pick good one by comparing it with reference RF.\n\
              [-r] option to input a reference RF.\n\
-             [-R] option to use input stacked RF as reference RF.\n\
+             [-R] option to use stacked waveform of all input RF as reference RF.\n\
 \n\
 Usage: %s -L<filelist> -G<good list> -D<bad list> -T<threshold> [-R<reference rf>]\n\
          [-r<input reference rf>] [-C<tmark/t1/t2>] \n\
@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 	char *strRef = NULL, *str_Ref_I = NULL, *strgood = NULL, *strbad = NULL;
 	int  fgRef = 0, fgRef_I = 0, fglst =0, fggood = 0, fgbad = 0, fgthreshold = 0;
 
-	int i,j;
+	int i;
 	char  *strlst = NULL;
 	int  nlst;
 	char line[MAXSTR];
@@ -134,7 +134,11 @@ int main(int argc, char *argv[])
 	for(i = 0; i < nlst; ++i)
 	{
 		saclst[i].status = GOOD;
-		fscanf(fplst, "%s\n", (saclst[i].filenm) );
+		if( 0 == fscanf(fplst, "%s\n", (saclst[i].filenm) ) )
+		{
+			perrmsg( strlst, ERR_READ_FILE);
+        	exit(1);
+		}
 		saclst[i].trace = read_sac( saclst[i].filenm, &(saclst[i].hdr) );
 
 		//Add by wangsheng 2015/11/08
